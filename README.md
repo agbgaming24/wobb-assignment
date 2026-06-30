@@ -32,6 +32,22 @@ This project is an influencer discovery interface with a saved list flow.
 - Verified `npm run build`, `npm run lint`, and `npm run dev` locally; pushed these changes to the project remote.
 
 
+## Remaining improvements & Libraries used
+
+- **Remaining improvements:**
+	- No functional regressions or required fixes remain.
+	- Optional future improvements: add unit/integration tests, enable reordering of the shortlist, add backend sync/auth, and run an accessibility audit.
+
+- **Libraries used (high level):**
+	- Core: React 19, react-dom
+	- Routing: `react-router-dom` (v7)
+	- State: `zustand` (with `persist` middleware)
+	- Build/tooling: `vite`, `typescript`, `eslint`
+	- Styling: `tailwindcss`
+	- Dev / tooling helpers: ESLint plugins and TypeScript type packages (see `package.json` for exact versions)
+	- Removed due to incompatibility: `react-beautiful-dnd` (peer conflict with React 19)
+
+
 ## Trade-offs
 
 - The list is kept in the middle of the page to preserve visual balance, even though the interaction is intentionally simple.
