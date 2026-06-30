@@ -1,57 +1,72 @@
-import { useNavigate } from "react-router-dom";
+import { memo, type MouseEvent } from "react";
+import { Link } from "react-router-dom";
+
 import type { Platform, UserProfileSummary } from "@/types";
 import { VerifiedBadge } from "./VerifiedBadge";
+import { formatFollowers } from "@/utils/formatters";
+import { getSelectedProfileKey, useSelectedListStore } from "@/store/selectedListStore";
+import { useShallow } from "zustand/react/shallow";
 
 interface ProfileCardProps {
   profile: UserProfileSummary;
   platform: Platform;
-  searchQuery: string;
-  onProfileClick?: (username: string) => void;
-}
-
-function formatFollowersLocal(count: number) {
-  if (count >= 1000000) return (count / 1000000).toFixed(1) + "M followers";
-  if (count >= 1000) return (count / 1000).toFixed(0) + "K followers";
-  return count + " followers";
 }
 
 export function ProfileCard({
   profile,
   platform,
-  searchQuery,
-  onProfileClick,
 }: ProfileCardProps) {
-  const navigate = useNavigate();
+  const { addProfile, isSelected } = useSelectedListStore(
+    useShallow((state) => ({
+      addProfile: state.addProfile,
+      isSelected: state.isSelected,
+    }))
+  );
 
-  const handleClick = () => {
-    if (onProfileClick) onProfileClick(profile.username);
-    navigate(`/profile/${profile.username}?platform=${platform}`);
+  const profileKey = getSelectedProfileKey({ platform, user_id: profile.user_id });
+  const selected = isSelected(profileKey);
+
+  const handleAdd = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    addProfile(profile, platform);
   };
 
   return (
-    <div
-      onClick={handleClick}
-      className="flex items-center gap-3 p-3 border border-gray-300 mb-2 cursor-pointer hover:bg-gray-50 w-[700px]"
-      data-search={searchQuery}
+    <article
+      className="group flex min-h-[88px] cursor-pointer items-center gap-4 rounded-2xl border border-white/10 bg-slate-950/45 p-4 text-left shadow-[0_10px_24px_rgba(8,15,40,0.1)] transition hover:border-violet-300/30 hover:bg-slate-950/60"
     >
-      <img src={profile.picture} className="w-12 h-12 rounded-full" />
-      <div className="text-left flex-1">
-        <div className="font-bold">
-          @{profile.username}
-          <VerifiedBadge verified={profile.is_verified} />
-        </div>
-        <div className="text-sm text-gray-600">{profile.fullname}</div>
-        <div className="text-sm">{formatFollowersLocal(profile.followers)}</div>
-      </div>
-      {/* TODO: candidates must implement Add to List feature */}
-      {/* TODO: candidates must implement Add to List feature */}
-      <button
-        disabled
-        className="px-3 py-1 bg-gray-300 text-gray-500 text-sm rounded cursor-not-allowed"
-        onClick={(e) => e.stopPropagation()}
+      <Link
+        to={`/profile/${profile.username}?platform=${platform}`}
+        className="flex min-w-0 flex-1 items-center gap-4"
       >
-        Add to List
+        <img
+          src={profile.picture}
+          alt={profile.fullname}
+          className="h-14 w-14 rounded-2xl object-cover ring-1 ring-white/10"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 text-base font-semibold text-white">
+            <span className="truncate">@{profile.username}</span>
+            <VerifiedBadge verified={profile.is_verified} />
+          </div>
+          <p className="truncate text-sm text-slate-300">{profile.fullname}</p>
+          <p className="mt-1 text-sm text-slate-400">{formatFollowers(profile.followers)} followers</p>
+        </div>
+      </Link>
+      <button
+        type="button"
+        onClick={handleAdd}
+        disabled={selected}
+        className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+          selected
+            ? "cursor-not-allowed border border-emerald-300/30 bg-emerald-300/10 text-emerald-100"
+            : "bg-gradient-to-r from-violet-600 to-blue-600 text-white shadow-[0_10px_22px_rgba(79,70,229,0.2)] hover:from-violet-500 hover:to-blue-500"
+        }`}
+      >
+        {selected ? "Added" : "Add to List"}
       </button>
-    </div>
+    </article>
   );
 }
+
+export const MemoProfileCard = memo(ProfileCard);

@@ -1,59 +1,106 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { Layout } from "@/components/Layout";
-import { VerifiedBadge } from "@/components/VerifiedBadge";
-import type { FullUserProfile, ProfileDetailResponse } from "@/types";
-import { formatEngagementRate } from "@/utils/formatters";
-import { loadProfileByUsername } from "@/utils/profileLoader";
 
-function formatFollowersDetail(count: number) {
-  if (count >= 1000000) return (count / 1000000).toFixed(2) + "M";
-  if (count >= 1000) return (count / 1000).toFixed(1) + "K";
-  return String(count);
+import { Layout } from "@/components/Layout";
+import type { FullUserProfile, Platform, ProfileDetailResponse } from "@/types";
+import { loadProfileByUsername } from "@/utils/profileLoader";
+import { getPlatformLabel, isPlatform } from "@/utils/dataHelpers";
+import { getSelectedProfileKey, useSelectedListStore } from "@/store/selectedListStore";
+import { ProfileDetailActions } from "@/components/ProfileDetailActions";
+import { ProfileDetailHero } from "@/components/ProfileDetailHero";
+import { ProfileDetailStats } from "@/components/ProfileDetailStats";
+
+function resolveProfilePlatform(platformParam: string | null, profile: FullUserProfile): Platform {
+  if (platformParam && isPlatform(platformParam)) {
+    return platformParam;
+  }
+
+  if (profile.type && isPlatform(profile.type)) {
+    return profile.type;
+  }
+
+  return "instagram";
 }
 
 export function ProfileDetailPage() {
   const { username } = useParams<{ username: string }>();
   const [searchParams] = useSearchParams();
-  const platform = searchParams.get("platform") || "unknown";
-  const [profileData, setProfileData] = useState<ProfileDetailResponse | null>(
-    null
-  );
-  const [loaded, setLoaded] = useState(false);
+  const platformParam = searchParams.get("platform");
+  const [profileData, setProfileData] = useState<ProfileDetailResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const addProfile = useSelectedListStore((state) => state.addProfile);
+  const selectedProfiles = useSelectedListStore((state) => state.selectedProfiles);
 
   useEffect(() => {
-    if (!username) return;
+    let cancelled = false;
 
-    loadProfileByUsername(username).then((data) => {
-      setProfileData(data);
-      setLoaded(true);
-    });
+    const loadProfile = async () => {
+      await Promise.resolve();
+
+      if (cancelled) return;
+
+      setLoading(true);
+      setError(null);
+      setProfileData(null);
+
+      if (!username) {
+        setError("Invalid profile URL.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await loadProfileByUsername(username);
+
+        if (cancelled) return;
+
+        setProfileData(data);
+
+        if (!data) {
+          setError(`Could not load profile details for ${username}.`);
+        }
+      } catch {
+        if (cancelled) return;
+        setError(`Could not load profile details for ${username}.`);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
   }, [username]);
 
   if (!username) {
     return (
-      <Layout>
-        <p>Invalid profile</p>
-        <Link to="/">Back</Link>
+      <Layout title="Profile unavailable">
+        <p className="text-slate-300">Invalid profile.</p>
+        <Link to="/" className="mt-4 inline-flex rounded-full bg-cyan-300 px-4 py-2 text-sm font-medium text-slate-950">
+          Back to search
+        </Link>
       </Layout>
     );
   }
 
-  if (!loaded) {
+  if (loading) {
     return (
-      <Layout title={`@${username}`}>
-        <p className="text-gray-400">Loading...</p>
+      <Layout title={`@${username}`} eyebrow="Profile details" description="Loading the full creator dossier." >
+        <p className="text-slate-300">Loading...</p>
       </Layout>
     );
   }
 
-  if (!profileData) {
+  if (error || !profileData) {
     return (
-      <Layout title={`@${username}`}>
-        <p className="text-red-600 mb-4">
-          Could not load profile details for {username}
-        </p>
-        <Link to="/" className="text-blue-600 underline">
+      <Layout title={`@${username}`} eyebrow="Profile details" description="This profile could not be loaded.">
+        <p className="text-rose-200 mb-4">{error ?? `Could not load profile details for ${username}.`}</p>
+        <Link to="/" className="text-cyan-200 underline">
           Back to search
         </Link>
       </Layout>
@@ -61,102 +108,52 @@ export function ProfileDetailPage() {
   }
 
   const user: FullUserProfile = profileData.data.user_profile;
+  const selectedPlatform = resolveProfilePlatform(platformParam, user);
+  const profileKey = getSelectedProfileKey({
+    platform: selectedPlatform,
+    user_id: user.user_id,
+  });
+  const isSelected = selectedProfiles.some(
+    (profile) => getSelectedProfileKey(profile) === profileKey
+  );
 
   return (
-    <Layout title={user.fullname}>
-      <Link to="/" className="text-sm text-blue-600 mb-4 inline-block">
+    <Layout
+      eyebrow="Profile details"
+      title={user.fullname}
+      description={`@${user.username} · ${getPlatformLabel(selectedPlatform)}`}
+    >
+      <Link
+        to="/"
+        className="inline-flex rounded-full border border-white/10 bg-white/6 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+      >
         ← Back to search
       </Link>
 
-      <div className="flex gap-6 items-start text-left max-w-2xl mx-auto">
-        <img
-          src={user.picture}
-          className="w-24 h-24 rounded-full border"
-        />
-        <div className="flex-1">
-          <h2 className="text-xl font-bold">
-            @{user.username}
-            <VerifiedBadge verified={user.is_verified} />
-          </h2>
-          <p className="text-gray-600">{user.fullname}</p>
-          <p className="text-xs text-gray-400 mt-1">Platform: {platform}</p>
-
-          {user.description && (
-            <p className="mt-3 text-sm text-gray-700">{user.description}</p>
-          )}
-
-          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div className="border p-2 rounded">
-              <div className="text-gray-500">Followers</div>
-              <div className="font-semibold">
-                {formatFollowersDetail(user.followers)}
-              </div>
-            </div>
-            <div className="border p-2 rounded">
-              <div className="text-gray-500">Engagement Rate</div>
-              <div className="font-semibold">
-                {user.engagement_rate !== undefined
-                  ? (user.engagement_rate * 10000).toFixed(2) + "%"
-                  : "N/A"}
-              </div>
-            </div>
-            {user.posts_count !== undefined && (
-              <div className="border p-2 rounded">
-                <div className="text-gray-500">Posts</div>
-                <div className="font-semibold">{user.posts_count}</div>
-              </div>
-            )}
-            {user.avg_likes !== undefined && (
-              <div className="border p-2 rounded">
-                <div className="text-gray-500">Avg Likes</div>
-                <div className="font-semibold">
-                  {formatFollowersDetail(user.avg_likes)}
-                </div>
-              </div>
-            )}
-            {user.avg_comments !== undefined && (
-              <div className="border p-2 rounded">
-                <div className="text-gray-500">Avg Comments</div>
-                <div className="font-semibold">{user.avg_comments}</div>
-              </div>
-            )}
-            {user.avg_views !== undefined && user.avg_views > 0 && (
-              <div className="border p-2 rounded">
-                <div className="text-gray-500">Avg Views</div>
-                <div className="font-semibold">
-                  {formatFollowersDetail(user.avg_views)}
-                </div>
-              </div>
-            )}
-            {user.engagements !== undefined && (
-              <div className="border p-2 rounded">
-                <div className="text-gray-500">Engagements</div>
-                <div className="font-semibold">
-                  {formatEngagementRate(user.engagement_rate)}
-                </div>
-              </div>
-            )}
-          </div>
-
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+        <div className="space-y-6">
+          <ProfileDetailHero user={user} platform={selectedPlatform} />
+          <ProfileDetailStats user={user} />
           {user.url && (
             <a
               href={user.url}
               target="_blank"
-              className="inline-block mt-4 text-blue-600 text-sm"
+              rel="noreferrer"
+              className="inline-flex rounded-full bg-cyan-300 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-200"
             >
-              View on platform →
+              View on platform
             </a>
           )}
-
-          {/* TODO: candidates must implement Add to List feature */}
-          {/* TODO: candidates must implement Add to List feature */}
-          <button
-            disabled
-            className="block mt-4 px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed"
-          >
-            Add to List
-          </button>
         </div>
+
+        <ProfileDetailActions
+          user={user}
+          platform={selectedPlatform}
+          profileKey={profileKey}
+          isSelected={isSelected}
+          onAdd={() => addProfile(user, selectedPlatform)}
+          selectedCount={selectedProfiles.length}
+        />
       </div>
     </Layout>
   );
