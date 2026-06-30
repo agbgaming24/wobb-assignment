@@ -18,6 +18,20 @@ This project is an influencer discovery interface with a saved list flow.
 - Duplicate entries are prevented for the same profile on the same platform.
 - The app is designed around the provided JSON data and does not require a backend.
 
+## What changed
+
+- Fixed a startup `ENOENT` (-4058) by adding a root-level npm shim that forwards scripts into the app folder.
+- Installed and validated dependencies for the nested app and removed `react-beautiful-dnd` (peer-conflict with React 19) to ensure CI/hosting builds succeed.
+- Replaced React Context usage with a small persistent Zustand store (`src/store/selectedListStore.ts`) to manage the saved shortlist.
+- Implemented `Add to List` (duplicate-safe) and persistent shortlist UI (`SelectedListPanel`) with remove/clear actions.
+- Hardened profile loading (`src/utils/profileLoader.ts`) and fixed engagement-rate math in `src/utils/formatters.ts`.
+- Extracted presentational components for the profile detail view and added a resilient NotFound route.
+- Performance improvements: memoized list/card components and used shallow selectors to reduce re-renders.
+- Removed unused components and dead dependencies (e.g., `SearchBar` and `react-beautiful-dnd`).
+- Updated styling and layout (subdued purple→blue theme, centered shortlist) and cleaned up header UI.
+- Verified `npm run build`, `npm run lint`, and `npm run dev` locally; pushed these changes to the project remote.
+
+
 ## Trade-offs
 
 - The list is kept in the middle of the page to preserve visual balance, even though the interaction is intentionally simple.
