@@ -16,26 +16,21 @@ export function Layout({ children, title, eyebrow, description }: LayoutProps) {
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
         <header className="rounded-2xl border border-white/10 bg-slate-950/50 px-5 py-4 shadow-[0_16px_40px_rgba(8,15,40,0.18)] backdrop-blur-md sm:px-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
               <Link to="/" className="inline-flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.24em] text-violet-200/90">
                 <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/15 text-violet-100 ring-1 ring-violet-300/20">
                   W
                 </span>
                 Wobb studio
               </Link>
-              <div className="mt-3 max-w-2xl">
-                {eyebrow && <p className="text-xs uppercase tracking-[0.28em] text-violet-200/70">{eyebrow}</p>}
-                {title && <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>}
-                {description && <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">{description}</p>}
-              </div>
             </div>
-            <Link
-              to="/"
-              className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:border-violet-300/30 hover:bg-violet-300/10"
-            >
-              Search creators
-            </Link>
+
+            <div className="mx-auto max-w-3xl text-center">
+              {eyebrow && <p className="text-xs uppercase tracking-[0.28em] text-violet-200/70">{eyebrow}</p>}
+              {title && <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{title}</h1>}
+              {description && <p className="mt-2 text-sm leading-6 text-slate-300 sm:text-base">{description}</p>}
+            </div>
           </div>
         </header>
 
