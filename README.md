@@ -14,15 +14,13 @@ This project is an influencer discovery interface with a saved list flow.
 
 ## Assumptions
 
-- The selected list is a persistent shortlist, not a purchase cart.
 - Persistence is handled locally in the browser through Zustand and `localStorage`.
 - Duplicate entries are prevented for the same profile on the same platform.
 - The app is designed around the provided JSON data and does not require a backend.
-- The project is nested inside `vibe-coder-assignment/`, so scripts are expected to run from that folder.
 
 ## Trade-offs
 
-- The list is centered and styled like a product list, but checkout and quantity behavior were intentionally removed because the flow is not transactional.
+- The list is kept in the middle of the page to preserve visual balance, even though the interaction is intentionally simple.
 - Local persistence keeps the implementation simple and fast, but it does not sync across devices or browsers.
 - The UI uses a restrained purple-to-blue gradient and simpler surfaces instead of a highly decorative design, to keep the experience more standard and readable.
 - Profile details are loaded from static JSON files, which keeps the app lightweight but limits dynamic data updates.
